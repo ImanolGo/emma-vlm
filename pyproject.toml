@@ -1,26 +1,57 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "emma-vlm"
+version = "0.2.0"
+description = "EMMA-style end-to-end driving trajectory prediction with vision LLMs via OpenRouter"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.40",
+    "numpy>=1.24",
+    "pillow>=10",
+    "matplotlib>=3.7",
+    "pyquaternion>=0.9.9",
+    "nuscenes-devkit>=1.1.11",
+    "omegaconf>=2.3",
+    "typer>=0.9",
+    "rich>=13",
+    "python-dotenv>=1.0",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "ruff>=0.5", "black>=24", "mypy>=1.8", "pre-commit>=3.6"]
+
+[project.scripts]
+emma = "emma.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+emma = ["prompts/*.txt"]
+
 [tool.black]
-line-length = 88
-target-version = ['py310']
-include = '\.pyi?$'
+line-length = 110
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+ignore = ["E402", "E501", "B008", "B905"]  # B008: typer idiom
 
 [tool.mypy]
 python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q --cov=src"
 testpaths = ["tests"]
-
-[tool.ruff]
-line-length = 88
-target-version = "py310"
-select = ["E", "F", "B", "I"]
-ignore = ["E402", "E501"]
+pythonpath = ["src"]
+addopts = "-ra -q"

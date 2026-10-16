@@ -1,56 +1,45 @@
-defaults:
-  - _self_
-  - mode: predict
-
-hydra:
-  run:
-    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  sweep:
-    dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
-    subdir: ${hydra.job.num}
+# EMMA-VLM configuration. Any value can be overridden from the CLI with
+# --set key=value (e.g. --set model.name=openai/gpt-6-luna).
 
 data:
-  nuimages_root: ${oc.env:NUIMAGES_DATAROOT}
-  version: "v1.0-mini"
-  history_seconds: 2
-  future_seconds: 3
-  sampling_frequency: 2  # Hz
+  nuimages_root: ${oc.env:NUIMAGES_DATAROOT,data/sets/nuimages}
+  version: v1.0-mini
+  camera: CAM_FRONT
+  history_seconds: 2.0
+  future_seconds: 3.0
+  dt: 0.5              # waypoint spacing (s); nuImages sweeps are ~2 Hz
+  context_frames: 0    # extra past camera frames to send (0 = key frame only)
 
 model:
-  api_key: ${oc.env:ANTHROPIC_API_KEY}
-  version: "claude-3-5-sonnet-20241022"
-  max_tokens: 1000
-  temperature: 0.7
+  api_key: ${oc.env:OPENROUTER_API_KEY,null}
+  base_url: https://openrouter.ai/api/v1
+  # Default: fast, strong vision + spatial reasoning, structured outputs.
+  # Cheaper/faster alternatives: openai/gpt-6-luna, anthropic/claude-haiku-5.5
+  name: ${oc.env:EMMA_MODEL,google/gemini-3.8-flash}
+  max_tokens: 2048
+  temperature: 0.2
+  reasoning_effort: low      # low | medium | high | null (omit)
+  structured_output: true    # JSON-schema constrained output, falls back automatically
+  image_max_side: 1280
+  image_quality: 90
+  timeout: 90
+  max_retries: 3
+  parse_retries: 1
+  provider: null             # optional OpenRouter provider routing, e.g. {sort: latency}
+
+evaluation:
+  concurrency: 4
 
 visualization:
-  save_output: true
-  plot_ground_truth: true
+  max_range: 50
+  fig_size: [18, 10]
+  dpi: 120
   colors:
     trajectory: "#2ecc71"
     gt_trajectory: "#e74c3c"
+    baseline: "#95a5a6"
+    history: "#34495e"
     vehicle: "#3498db"
     pedestrian: "#f1c40f"
     cyclist: "#9b59b6"
     ego: "#2c3e50"
-  max_range: 50
-  fig_size: [20, 10]
-  dpi: 300
-
-logging:
-  version: 1
-  disable_existing_loggers: false
-  formatters:
-    standard:
-      format: '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-  handlers:
-    console:
-      class: logging.StreamHandler
-      formatter: standard
-      stream: ext://sys.stdout
-    file:
-      class: logging.FileHandler
-      formatter: standard
-      filename: ${hydra.runtime.output_dir}/emma.log
-  root:
-    level: INFO
-    handlers: [console, file]

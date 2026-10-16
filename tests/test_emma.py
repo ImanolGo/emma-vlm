@@ -20,6 +20,7 @@ FT = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
 
 # ----------------------------------------------------------------- geometry
 
+
 def test_global_to_ego_identity_and_rotation():
     from pyquaternion import Quaternion
 
@@ -45,6 +46,7 @@ def test_constant_velocity_baseline():
 
 
 # ----------------------------------------------------------------- loader
+
 
 def test_loader_filters_cameras_and_uses_ego_frame(fake_nuimages):
     loader = NuImagesLoader(str(fake_nuimages))
@@ -81,6 +83,7 @@ def test_projection_points_ahead_land_below_horizon(fake_nuimages):
 
 
 # ----------------------------------------------------------------- model
+
 
 def test_extract_json_variants():
     obj = {"trajectory": [[1, 2]]}
@@ -119,7 +122,9 @@ def test_predict_retries_on_garbage_then_succeeds():
 
 
 def test_structured_output_fallback():
-    client, comp = fake_client(RuntimeError("Provider does not support response_format json_schema"), GOOD_REPLY)
+    client, comp = fake_client(
+        RuntimeError("Provider does not support response_format json_schema"), GOOD_REPLY
+    )
     emma = EMMA(api_key=None, client=client)
     emma.predict_trajectory(image=np.zeros((90, 160, 3), np.uint8))
     assert comp.calls[1]["response_format"] == {"type": "json_object"}
@@ -131,6 +136,7 @@ def test_missing_key_is_clear_error():
 
 
 # ----------------------------------------------------------------- eval + viz
+
 
 def test_evaluate_end_to_end(fake_nuimages, tmp_path):
     client, _ = fake_client(GOOD_REPLY)
@@ -154,7 +160,13 @@ def test_visualizer_writes_png(fake_nuimages, tmp_path):
     s = NuImagesLoader(str(fake_nuimages)).get_sample_data("sample_CAM_FRONT")
     pred = json.loads(GOOD_REPLY)
     out = tmp_path / "vis.png"
-    EMMAVisualizer().visualize_prediction(s.image, pred, s.ground_truth, out, s.calibration,
-                                          s.history_xy, constant_velocity_baseline(
-                                              s.history_xy, s.history_times, FT, s.speed))
+    EMMAVisualizer().visualize_prediction(
+        s.image,
+        pred,
+        s.ground_truth,
+        out,
+        s.calibration,
+        s.history_xy,
+        constant_velocity_baseline(s.history_xy, s.history_times, FT, s.speed),
+    )
     assert out.stat().st_size > 10_000

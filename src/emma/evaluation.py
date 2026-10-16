@@ -51,9 +51,7 @@ def evaluate_one(model: Any, sample: Any, future_times: List[float]) -> Dict[str
         record["error"] = "no ground-truth future"
         return record
 
-    baseline = constant_velocity_baseline(
-        sample.history_xy, sample.history_times, future_times, sample.speed
-    )
+    baseline = constant_velocity_baseline(sample.history_xy, sample.history_times, future_times, sample.speed)
     record["baseline_metrics"] = calculate_metrics({"trajectory": baseline}, gt)
     try:
         pred = model.predict_sample(sample, future_times)

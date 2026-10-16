@@ -163,7 +163,7 @@ class NuImagesLoader:
         context_images, context_times = [], []
         if self.context_frames > 0:
             past_sds = [(t, sd) for t, sd in zip(times_arr, chain) if t < -1e-6]
-            for t, sd in past_sds[-self.context_frames:]:
+            for t, sd in past_sds[-self.context_frames :]:
                 try:
                     context_images.append(self._load_image(sd))
                     context_times.append(float(t))

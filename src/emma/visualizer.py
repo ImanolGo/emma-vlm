@@ -29,9 +29,16 @@ DEFAULT_COLORS = {
     "ego": "#2c3e50",
 }
 _TYPE_GROUP = {
-    "car": "vehicle", "truck": "vehicle", "bus": "vehicle", "vehicle": "vehicle", "van": "vehicle",
-    "motorcycle": "cyclist", "bicycle": "cyclist", "cyclist": "cyclist",
-    "pedestrian": "pedestrian", "person": "pedestrian",
+    "car": "vehicle",
+    "truck": "vehicle",
+    "bus": "vehicle",
+    "vehicle": "vehicle",
+    "van": "vehicle",
+    "motorcycle": "cyclist",
+    "bicycle": "cyclist",
+    "cyclist": "cyclist",
+    "pedestrian": "pedestrian",
+    "person": "pedestrian",
 }
 
 
@@ -97,12 +104,21 @@ class EMMAVisualizer:
         h, w = image.shape[:2]
         ax.set_title("Camera view (projected paths)")
         if calibration is not None:
+
             def draw(traj, color, label):
                 pts = np.vstack([[0.0, 0.0], np.asarray(traj, dtype=float).reshape(-1, 2)])
                 uv = project_to_image(pts, calibration)
                 ok = ~np.isnan(uv).any(axis=1)
                 if ok.sum() >= 2:
-                    ax.plot(uv[ok, 0], uv[ok, 1], "-o" if label == "prediction" else "--o", color=color, lw=3 if label == "prediction" else 2, ms=4, label=label)
+                    ax.plot(
+                        uv[ok, 0],
+                        uv[ok, 1],
+                        "-o" if label == "prediction" else "--o",
+                        color=color,
+                        lw=3 if label == "prediction" else 2,
+                        ms=4,
+                        label=label,
+                    )
 
             draw(prediction["trajectory"], self.colors["trajectory"], "prediction")
             if ground_truth is not None and len(ground_truth.get("trajectory", [])):
@@ -111,8 +127,14 @@ class EMMAVisualizer:
                 uv = project_to_image(np.array([obj["position"]]), calibration)[0]
                 if not np.isnan(uv).any() and 0 <= uv[0] < w and 0 <= uv[1] < h:
                     ax.add_patch(Circle(uv, radius=12, color=self._color(obj["type"]), alpha=0.8))
-                    ax.text(uv[0] + 15, uv[1], f"{obj['type']} {obj['position'][0]:.0f}m",
-                            color="white", fontsize=8, backgroundcolor="black")
+                    ax.text(
+                        uv[0] + 15,
+                        uv[1],
+                        f"{obj['type']} {obj['position'][0]:.0f}m",
+                        color="white",
+                        fontsize=8,
+                        backgroundcolor="black",
+                    )
             ax.legend(loc="lower right")
         ax.set_xlim(0, w)
         ax.set_ylim(h, 0)
@@ -159,10 +181,13 @@ class EMMAVisualizer:
     def _plot_text_description(self, ax, prediction) -> None:
         ax.axis("off")
         meta = prediction.get("meta_decision") or {}
-        objs = "\n".join(
-            f"  - {o['type']} at ({o['position'][0]:.1f}, {o['position'][1]:.1f}) m: {o.get('description', '')}"
-            for o in prediction.get("critical_objects", [])[:6]
-        ) or "  (none)"
+        objs = (
+            "\n".join(
+                f"  - {o['type']} at ({o['position'][0]:.1f}, {o['position'][1]:.1f}) m: {o.get('description', '')}"
+                for o in prediction.get("critical_objects", [])[:6]
+            )
+            or "  (none)"
+        )
         info = prediction.get("_meta", {})
         text = "\n".join(
             [

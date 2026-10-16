@@ -15,8 +15,10 @@ from rich.table import Table
 
 from emma.config import build_loader, build_model, future_times, load_config
 
-app = typer.Typer(help="EMMA-VLM: end-to-end driving trajectory prediction with vision LLMs (OpenRouter)",
-                  no_args_is_help=True)
+app = typer.Typer(
+    help="EMMA-VLM: end-to-end driving trajectory prediction with vision LLMs (OpenRouter)",
+    no_args_is_help=True,
+)
 console = Console()
 logger = logging.getLogger("emma")
 
@@ -77,8 +79,11 @@ def list_samples(
 
 
 @app.command()
-def check(model: Optional[str] = ModelOpt, config: Optional[Path] = ConfigOpt,
-          overrides: Optional[List[str]] = SetOpt) -> None:
+def check(
+    model: Optional[str] = ModelOpt,
+    config: Optional[Path] = ConfigOpt,
+    overrides: Optional[List[str]] = SetOpt,
+) -> None:
     """Check API key + model with a tiny synthetic image (no dataset needed)."""
     import numpy as np
 
@@ -88,14 +93,17 @@ def check(model: Optional[str] = ModelOpt, config: Optional[Path] = ConfigOpt,
     img[180:, :] = (90, 90, 90)  # road
     img[:180, :] = (135, 180, 235)  # sky
     img[180:, 310:330] = (255, 255, 255)  # lane marking
-    pred = emma.predict_trajectory(image=img, history_xy=[[-10, 0], [-7.5, 0], [-5, 0], [-2.5, 0]],
-                                   command="go straight", speed=5.0)
+    pred = emma.predict_trajectory(
+        image=img, history_xy=[[-10, 0], [-7.5, 0], [-5, 0], [-2.5, 0]], command="go straight", speed=5.0
+    )
     console.print_json(json.dumps(pred))
 
 
 @app.command()
 def predict(
-    sample_token: Optional[str] = typer.Argument(None, help="Sample token (default: first front-camera sample)"),
+    sample_token: Optional[str] = typer.Argument(
+        None, help="Sample token (default: first front-camera sample)"
+    ),
     output_dir: Path = typer.Option(Path("outputs/predict"), help="Where to save JSON and PNG"),
     visualize: bool = typer.Option(True, "--visualize/--no-visualize"),
     model: Optional[str] = ModelOpt,
@@ -116,13 +124,19 @@ def predict(
     with console.status(f"Asking {cfg.model.name}..."):
         pred = emma.predict_sample(sample, future_times(cfg))
 
-    result = {"token": token, "command": sample.command, "prediction": pred,
-              "ground_truth": sample.ground_truth}
+    result = {
+        "token": token,
+        "command": sample.command,
+        "prediction": pred,
+        "ground_truth": sample.ground_truth,
+    }
     if len(sample.ground_truth["trajectory"]):
         result["metrics"] = calculate_metrics(pred, sample.ground_truth)
     save_json(result, output_dir / f"{token}_prediction.json")
     if visualize:
-        _render(EMMAVisualizer(cfg.visualization), sample, pred, output_dir / f"{token}_visualization.png", cfg)
+        _render(
+            EMMAVisualizer(cfg.visualization), sample, pred, output_dir / f"{token}_visualization.png", cfg
+        )
 
     console.print(f"[bold]Scene:[/bold] {pred['scene_description']}")
     console.print(f"[bold]Decision:[/bold] {pred['meta_decision']}")
@@ -159,8 +173,14 @@ def evaluate(
         if viz and "prediction" in rec:
             _render(viz, sample, rec["prediction"], output_dir / "viz" / f"{rec['token']}.png", cfg)
 
-    summary = run_eval(emma, loader.get_samples(num_samples or None), ft, output_dir,
-                       concurrency or cfg.evaluation.concurrency, on_record)
+    summary = run_eval(
+        emma,
+        loader.get_samples(num_samples or None),
+        ft,
+        output_dir,
+        concurrency or cfg.evaluation.concurrency,
+        on_record,
+    )
 
     table = Table(title=f"{cfg.model.name}: {summary['num_success']}/{summary['num_samples']} succeeded")
     table.add_column("metric")

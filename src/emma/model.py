@@ -213,7 +213,7 @@ class EMMA:
         parse_retries: int = 1,
         provider: Optional[Dict[str, Any]] = None,
         app_name: str = "EMMA-VLM",
-        app_url: str = "https://github.com/ImanolGo/emma-claude",
+        app_url: str = "https://github.com/ImanolGo/emma-vlm",
         client: Any = None,
     ):
         if client is None:
@@ -258,9 +258,7 @@ class EMMA:
         left_hand_traffic: bool = False,
         context_times: Sequence[float] = (),
     ) -> str:
-        lines = [
-            f"  t={t:+.1f}s: ({x:.2f}, {y:.2f})" for t, (x, y) in zip(history_times, history_xy)
-        ]
+        lines = [f"  t={t:+.1f}s: ({x:.2f}, {y:.2f})" for t, (x, y) in zip(history_times, history_xy)]
         lines.append("  t=+0.0s: (0.00, 0.00)")
         context_note = ""
         if context_times:
@@ -270,9 +268,11 @@ class EMMA:
             camera=camera,
             context_note=context_note,
             location=location or "unknown",
-            traffic_side="vehicles drive on the LEFT side of the road"
-            if left_hand_traffic
-            else "vehicles drive on the RIGHT side of the road",
+            traffic_side=(
+                "vehicles drive on the LEFT side of the road"
+                if left_hand_traffic
+                else "vehicles drive on the RIGHT side of the road"
+            ),
             command=command,
             speed=_fmt(speed, "m/s"),
             acceleration=_fmt(acceleration, "m/s^2"),
@@ -398,7 +398,10 @@ class EMMA:
         content: List[Dict[str, Any]] = [{"type": "text", "text": prompt}]
         for img in context_images + [image]:
             content.append(
-                {"type": "image_url", "image_url": {"url": encode_image(img, self.image_max_side, self.image_quality)}}
+                {
+                    "type": "image_url",
+                    "image_url": {"url": encode_image(img, self.image_max_side, self.image_quality)},
+                }
             )
         messages = [
             {"role": "system", "content": self.system_prompt},

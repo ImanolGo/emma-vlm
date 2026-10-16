@@ -22,11 +22,25 @@ Any config value can be overridden: `emma evaluate -s data.context_frames=2 -s m
 
 ## Data
 
-Uses [nuImages](https://www.nuscenes.org/nuimages) (the mini split is enough to start). Each sample is a key frame from one camera plus ~6 past and ~6 future sweeps at ~2 Hz with ego poses, which gives a 2 s history and a 3 s ground-truth future. Only `CAM_FRONT` key frames are used (about 1/6 of samples).
+Two nuScenes-family datasets are supported; pick with `data.dataset` (`nuimages` default, or `nuscenes`).
+
+**nuImages** ([download](https://www.nuscenes.org/nuimages), the mini split is enough to start). Each sample is a key frame from one camera plus ~6 past and ~6 future sweeps at ~2 Hz with ego poses, which gives a 2 s history and a 3 s ground-truth future. Only `CAM_FRONT` key frames are used (about 1/6 of samples). `ego_pose` carries `speed`/`acceleration`/`rotation_rate` directly.
 
 ```
 $NUIMAGES_DATAROOT/
     samples/   sweeps/   v1.0-mini/
+```
+
+**nuScenes** ([download](https://www.nuscenes.org/nuscenes); `v1.0-mini` is ~3.9 GB, `v1.0-trainval` is the full benchmark). Every sample links six camera key frames at 2 Hz with ~12 Hz sweeps, so it has far more samples and includes turns/lane changes. nuScenes `ego_pose` has no motion fields, so speed/acceleration/yaw rate are derived from the ego trajectory.
+
+```
+$NUSCENES_DATAROOT/
+    samples/   sweeps/   v1.0-mini/
+```
+
+```bash
+emma list  -s data.dataset=nuscenes            # NUSCENES_DATAROOT must be set
+emma evaluate --num-samples 50 -s data.dataset=nuscenes
 ```
 
 All positions are in the **ego frame at the key frame**: x forward, y left, meters, current position (0, 0).

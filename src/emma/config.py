@@ -56,11 +56,18 @@ def build_model(cfg: DictConfig) -> Any:
 
 
 def build_loader(cfg: DictConfig) -> Any:
-    from emma.data import NuImagesLoader
+    from emma.data import NuImagesLoader, NuScenesLoader
 
     d = cfg.data
-    return NuImagesLoader(
-        dataroot=d.nuimages_root,
+    dataset = str(d.get("dataset", "nuimages")).lower()
+    if dataset == "nuscenes":
+        cls, root = NuScenesLoader, d.nuscenes_root
+    elif dataset == "nuimages":
+        cls, root = NuImagesLoader, d.nuimages_root
+    else:
+        raise ValueError(f"Unknown data.dataset {dataset!r} (use 'nuimages' or 'nuscenes')")
+    return cls(
+        dataroot=root,
         version=d.version,
         camera=d.camera,
         history_seconds=d.history_seconds,

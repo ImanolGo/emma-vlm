@@ -2,7 +2,10 @@
 # --set key=value (e.g. --set model.name=openai/gpt-6-luna).
 
 data:
+  # nuimages (CAM_FRONT key frames, ~1/6 of samples) or nuscenes (6 cameras/sample).
+  dataset: nuimages
   nuimages_root: ${oc.env:NUIMAGES_DATAROOT,data/sets/nuimages}
+  nuscenes_root: ${oc.env:NUSCENES_DATAROOT,data/sets/nuscenes}
   version: v1.0-mini
   camera: CAM_FRONT
   history_seconds: 2.0

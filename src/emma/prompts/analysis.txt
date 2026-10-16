@@ -1,0 +1,25 @@
+Camera: $camera$context_note
+Location: $location ($traffic_side)
+Routing command: $command
+
+Ego state now:
+- speed: $speed
+- longitudinal acceleration: $acceleration
+- yaw rate: $yaw_rate
+
+Ego history (ego frame of NOW, oldest first; current position is (0.00, 0.00)):
+$history
+
+Plan the ego trajectory for the next $horizon seconds as exactly $num_points waypoints at times $future_times s.
+
+Respond with a JSON object with exactly these keys:
+{
+  "scene_description": "one or two sentences",
+  "critical_objects": [
+    {"type": "car|truck|bus|pedestrian|cyclist|motorcycle|traffic_cone|barrier|other",
+     "position": [x, y], "velocity": [vx, vy], "description": "short"}
+  ],
+  "meta_decision": {"longitudinal": "keep speed|accelerate|decelerate|stop", "lateral": "keep lane|change lane left|change lane right|turn left|turn right"},
+  "reasoning": "two or three sentences",
+  "trajectory": [[x1, y1], [x2, y2], ...]
+}

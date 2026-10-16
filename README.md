@@ -1,282 +1,61 @@
-# EMMA-Claude
+# EMMA-VLM
 
-An implementation of EMMA (End-to-End Multimodal Model for Autonomous Driving) using the Claude API, based on the [EMMA paper](https://arxiv.org/abs/2410.23262). This implementation uses Claude for trajectory prediction and scene understanding instead of the original Gemini model.
+An EMMA-style planner ([EMMA: End-to-End Multimodal Model for Autonomous Driving](https://arxiv.org/abs/2410.23262)) that runs on **any vision LLM via [OpenRouter](https://openrouter.ai)**. Given a front-camera image, the ego vehicle's recent motion and a routing command, the model describes the scene, lists critical objects, makes a driving decision and outputs a 3-second trajectory. Predictions are scored against nuImages ground truth and a constant-velocity baseline.
 
-## Features
+Default model: **`google/gemini-3.8-flash`** — fast (~2 s per sample), strong vision and spatial reasoning, structured JSON output, and the same family EMMA was built on. Swap it with `--model` (e.g. `openai/gpt-6-luna` or `anthropic/claude-haiku-5.5` for lower cost).
 
-- End-to-end autonomous driving trajectory prediction
-- Integration with nuScenes dataset
-- Real-time visualization tools for predictions
-- Scene understanding and critical object detection
-- Comprehensive evaluation metrics
-- Command-line interface for different operations
-
-
-## Installation
-
-1. First, install system dependencies and set up the Python environment:
+## Quick start
 
 ```bash
-# Make the setup script executable
-chmod +x scripts/setup.sh
-
-# Run the setup script
-./scripts/setup.sh
-```
-
-2. Copy the environment file and configure your credentials:
-```bash
-cp .env.example .env
-```
-
-3. Allow direnv:
-```bash
-direnv allow
-```
-
-If you prefer to install dependencies manually:
-
-1. Install system dependencies (Ubuntu/Debian):
-```bash
-sudo apt-get update
-sudo apt-get install -y \
-    build-essential \
-    python3-dev \
-    gcc \
-    pkg-config \
-    libfreetype6-dev \
-    libpng-dev \
-    python3-matplotlib
-```
-
-2. Create and activate virtual environment:
-```bash
-uv venv --python python3.10
+./scripts/setup.sh                 # creates .venv and installs the package (uv)
 source .venv/bin/activate
+# edit .env: OPENROUTER_API_KEY and NUIMAGES_DATAROOT
+
+emma check                          # tests the key + model on a synthetic image (no dataset needed)
+emma list                           # usable sample tokens (front-camera key frames)
+emma predict                        # first sample -> outputs/predict/*.json + *.png
+emma predict <token> --model openai/gpt-6-luna
+emma evaluate --num-samples 50 --concurrency 8 --visualize
 ```
 
-3. Install Python dependencies:
-```bash
-uv pip install -r requirements.txt
-uv pip install -r requirements-dev.txt
+Any config value can be overridden: `emma evaluate -s data.context_frames=2 -s model.reasoning_effort=null`. See `config/config.yaml` and `emma show-config`.
+
+## Data
+
+Uses [nuImages](https://www.nuscenes.org/nuimages) (the mini split is enough to start). Each sample is a key frame from one camera plus ~6 past and ~6 future sweeps at ~2 Hz with ego poses, which gives a 2 s history and a 3 s ground-truth future. Only `CAM_FRONT` key frames are used (about 1/6 of samples).
+
+```
+$NUIMAGES_DATAROOT/
+    samples/   sweeps/   v1.0-mini/
 ```
 
-## Configuration
+All positions are in the **ego frame at the key frame**: x forward, y left, meters, current position (0, 0).
 
-Copy `.env.example` to `.env` and fill in your credentials:
+## Metrics
 
-```bash
-cp .env.example .env
-```
+`evaluate` reports ADE, FDE, L2 at 1/2/3 s (nuScenes open-loop style) and smoothness for the model **and** for a constant-velocity baseline on the same samples, plus a per-command breakdown, mean latency and cost. If the model doesn't beat the baseline, it isn't really using the image.
 
-Required environment variables:
-- `ANTHROPIC_API_KEY`: Your Claude API key
-- `NUIMAGES_DATAROOT`: Path to your nuScenes dataset
-
-## Development Environment
-
-This project uses `direnv` to automatically manage environment variables and virtual environments. 
-
-### Prerequisites
-
-1. Install direnv:
-```bash
-# On macOS
-brew install direnv
-
-# On Ubuntu/Debian
-sudo apt-get install direnv
-
-# On Fedora
-sudo dnf install direnv
-```
-
-2. Add direnv hook to your shell configuration:
-
-For bash (`~/.bashrc`):
-```bash
-eval "$(direnv hook bash)"
-```
-
-For zsh (`~/.zshrc`):
-```zsh
-eval "$(direnv hook zsh)"
-```
-
-For fish (`~/.config/fish/config.fish`):
-```fish
-direnv hook fish | source
-```
-
-3. Allow direnv in the project directory:
-```bash
-direnv allow
-```
-
-The included `.envrc` will automatically:
-- Create and activate a Python virtual environment using `uv`
-- Set up the PYTHONPATH
-- Load environment variables from `.env`
-- Configure development paths
-
-Note: Make sure to copy `.env.example` to `.env` and fill in your credentials:
-```bash
-cp .env.example .env
-```
-
-## Dataset Setup
-
-This project uses the nuScenes dataset. There are different versions available:
-
-## Dataset Setup
-
-This project uses the nuScenes image data for autonomous driving predictions. For development and testing, we recommend using the mini dataset (~4GB).
-
-### Required Data Structure
-
-After downloading, your data directory should look like this:
-```
-/data/sets/nuimages/
-    samples/     - Sensor data for keyframes (annotated images)
-    sweeps/      - Sensor data for intermediate frames (unannotated images)
-    v1.0-mini/   - JSON tables with metadata and annotations
-```
-
-### Setup Instructions
-
-1. Create an account at [nuScenes website](https://www.nuscenes.org/nuscenes#download) and accept the Terms of Use.
-
-2. Download the following files for the mini set:
-   - `v1.0-mini` (metadata and annotations)
-   - `samples` (keyframe images)
-   - `sweeps` (intermediate frame images)
-
-3. Extract the archives to your data directory without overwriting folders that occur in multiple archives.
-
-4. Update your `.env` file with the dataset path:
-```bash
-NUIMAGES_DATAROOT={WORSPACE_DIR}/data/sets/nuimages
-```
-
-### Verifying the Installation
-
-Install and test the nuscenes-devkit:
-```bash
-# Install devkit
-uv pip install nuscenes-devkit
-
-# Verify setup (in python)
-from nuimages import NuImages
-nusc = NuImages(version='v1.0-mini', dataroot='{WORSPACE_DIR}/data/sets/nuimages', verbose=True, lazy=True)
-```
-
-Note: While the full nuScenes dataset includes lidar, radar, and map data, this project focuses only on the image data for Claude-based predictions.
-
-## Usage
-
-### Command Line Interface
-
-1. Process a single sample:
-```bash
-python -m src.scripts.cli predict sample_token_123 --output-dir outputs
-```
-
-2. Run evaluation:
-```bash
-python -m src.scripts.cli evaluate --num-samples 100 --output-dir eval_results
-```
-
-3. Visualize predictions:
-```bash
-python -m src.scripts.cli visualize sample_token_123 predictions/sample_123.json
-```
-
-### Python API
+## Python API
 
 ```python
-from src.model.emma import ClaudeEMMA
-from src.data.nuimages_loader import NuImagesLoader
-from src.visualization.visualizer import EMMAVisualizer
+from emma.config import load_config, build_loader, build_model, future_times
 
-# Initialize components
-emma = ClaudeEMMA(api_key="your-api-key")
-nuim_loader = NuImagesLoader(dataroot="path/to/nuimages")
-visualizer = EMMAVisualizer()
-
-# Process a sample
-sample_data = nuim_loader.get_sample_data(sample_token)
-prediction = emma.predict_trajectory(
-    camera_images=sample_data.images,
-    ego_history=sample_data.ego_history,
-    command=sample_data.command
-)
-
-# Visualize results
-visualizer.visualize_prediction(
-    front_image=sample_data.images['CAM_FRONT'],
-    prediction=prediction,
-    ground_truth=sample_data.ground_truth,
-    save_path="prediction.png"
-)
+cfg = load_config()
+loader, model = build_loader(cfg), build_model(cfg)
+sample = loader.get_sample_data(loader.sample_tokens[0])
+pred = model.predict_sample(sample, future_times(cfg))
 ```
 
 ## Development
 
-Run tests:
 ```bash
-pytest tests/
+pytest          # runs against a synthetic nuImages dataset and a mocked API, no key needed
+ruff check src tests
 ```
-
-Format code:
-```bash
-black src/ tests/
-ruff check src/ tests/
-mypy src/
-```
-
-## Evaluation Metrics
-
-The implementation includes several metrics for evaluating prediction quality:
-
-- Average Displacement Error (ADE)
-- Final Displacement Error (FDE)
-- Trajectory Smoothness
-- Scene Understanding Accuracy
-
-## Visualization
-
-The visualization module provides:
-
-1. Camera View:
-   - Object detections with distance annotations
-   - Critical object highlighting
-
-2. Bird's Eye View:
-   - Predicted trajectory
-   - Ground truth trajectory (when available)
-   - Critical objects with velocity vectors
-   - Ego vehicle position and orientation
-
-3. Text Description:
-   - Scene analysis
-   - Critical object list
-   - Reasoning explanation
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
-MIT License - see LICENSE file for details.
-
-## Citation
-
-If you use this implementation in your research, please cite both the original EMMA paper and this implementation:
+MIT. If you use this, please cite the EMMA paper:
 
 ```bibtex
 @article{hwang2024emma,

@@ -1,8 +1,0 @@
-mode: evaluate
-
-num_samples: 100
-output_dir: outputs/evaluation
-metrics:
-  - ade
-  - fde
-  - smoothness

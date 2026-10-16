@@ -142,6 +142,7 @@ ENV/
 
 # Project specific
 *.log
+outputs/
 visualization_output/
 data/
 notebooks/.ipynb_checkpoints/

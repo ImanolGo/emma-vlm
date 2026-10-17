@@ -4,6 +4,10 @@ An EMMA-style planner ([EMMA: End-to-End Multimodal Model for Autonomous Driving
 
 Default model: **`google/gemini-3.8-flash`** — fast (~2 s per sample), strong vision and spatial reasoning, structured JSON output, and the same family EMMA was built on. Swap it with `--model` (e.g. `openai/gpt-6-luna` or `anthropic/claude-haiku-5.5` for lower cost).
 
+![EMMA-VLM example](docs/preview.jpg)
+
+*`emma predict` on a nuScenes sample: the front-camera view with the predicted trajectory (green) and ground truth (red) projected into the image, a bird's-eye view with the ego history and constant-velocity baseline, and the model's scene description, critical objects and driving decision.*
+
 ## Quick start
 
 ```bash
